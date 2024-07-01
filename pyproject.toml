@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "aws-ssm-param"
+version = "0.1.0"
+description = ""
+authors = ["Shawn Li <shawn.li@buyandship.com.tw>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+boto3 = "^1.20.8"
+click = "^8.1.7"
+awscli = "^1.33.19"
+
+[tool.poetry.scripts]
+aws-ssm-param = "aws_ssm_param.__init__:cli"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
