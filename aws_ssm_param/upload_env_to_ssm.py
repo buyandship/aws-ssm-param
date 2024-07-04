@@ -2,6 +2,7 @@ import os
 import subprocess
 
 import click
+import json
 
 DEFAULT_KMS_ALIAS = "alias/app/env"
 
@@ -32,6 +33,11 @@ def upload_env_to_ssm(env_file, kms_key_id, execute_mode):
 
             var_name, var_value = line.split("=", 1)
             ssm_path = f"/{ssm_app_name}/{ssm_env}/{var_name}"
+            json_dict = {
+                "Type": "SecureString",
+                "Name": ssm_path,
+                "Value": var_value,
+            }
 
             if not execute_mode:
                 print(f"Dry run: would put {var_name} to {ssm_path} with value {var_value}")
@@ -40,12 +46,8 @@ def upload_env_to_ssm(env_file, kms_key_id, execute_mode):
                     "aws",
                     "ssm",
                     "put-parameter",
-                    "--name",
-                    ssm_path,
-                    "--value",
-                    var_value,
-                    "--type",
-                    "SecureString",
+                    "--cli-input-json",
+                    json.dumps(json_dict),
                     "--overwrite",
                     "--key-id",
                     kms_key_id,
