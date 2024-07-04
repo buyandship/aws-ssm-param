@@ -1,16 +1,17 @@
 import os
-import subprocess
 
 import click
-import json
+
+from aws_ssm_param.create_secret import put_parameter
 
 DEFAULT_KMS_ALIAS = "alias/app/env"
 
 @click.command()
 @click.option("--env-file", "-f", required=True, help="Environment file")
 @click.option("--kms-key-id", "-k", help="KMS key ID for encryption (example: alias/my-kms-key)")
+@click.option("--type", "-t", "value_type", help="Type of parameter (String, StringList, SecureString)")
 @click.option("--execute-mode", "-e", is_flag=True, help="Execute mode (perform actual execution)")
-def upload_env_to_ssm(env_file, kms_key_id, execute_mode):
+def upload_env_to_ssm(env_file, kms_key_id, value_type, execute_mode):
     """Store environment variables in AWS SSM"""
     ssm_app_name = os.getenv('SSM_APP_NAME')
     ssm_env = os.getenv('SSM_ENV')
@@ -19,7 +20,10 @@ def upload_env_to_ssm(env_file, kms_key_id, execute_mode):
         raise ValueError("Both SSM_APP_NAME and SSM_ENV environment variables must be set")
 
     kms_key_id = kms_key_id or DEFAULT_KMS_ALIAS
+    value_type = value_type or "String"
+
     print(f"Using KMS key: {kms_key_id}")
+    print(f"Using value type: {value_type}")
 
     if not os.path.isfile(env_file):
         print("File not found:", env_file)
@@ -34,29 +38,4 @@ def upload_env_to_ssm(env_file, kms_key_id, execute_mode):
             var_name, var_value = line.split("=", 1)
             ssm_path = f"/{ssm_app_name}/{ssm_env}/{var_name}"
 
-            # for issue: https://github.com/aws/aws-cli/issues/4473
-            json_dict = {
-                "Type": "SecureString",
-                "Name": ssm_path,
-                "Value": var_value,
-            }
-
-            if not execute_mode:
-                print(f"Dry run: would put {var_name} to {ssm_path} with value {var_value}")
-            else:
-                command = [
-                    "aws",
-                    "ssm",
-                    "put-parameter",
-                    "--cli-input-json",
-                    json.dumps(json_dict),
-                    "--overwrite",
-                    "--key-id",
-                    kms_key_id,
-                ]
-                result = subprocess.run(command)
-                if result.returncode == 0:
-                    print(f"Successfully put {var_name} to {ssm_path}")
-                else:
-                    print(f"Failed to put {var_name} to {ssm_path}")
-
+            put_parameter(ssm_path, var_value, value_type, kms_key_id, execute_mode)

@@ -60,3 +60,9 @@ aws-ssm-param create_secret ${name} ${value}
 # real execution
 aws-ssm-param create_secret ${name} ${value} -e
 ```
+
+## Specific Value Type
+Default type is String
+```sh
+aws-ssm-param create_secret ${name} ${value} -t SecureString
+```
